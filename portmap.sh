@@ -41,16 +41,24 @@ sudo ss -tulwnp | awk '
     split($5, a, ":");
     port = a[length(a)];
     if (port ~ /^[0-9]+$/) {
-        match($7, /\"([^"]+)\"/, arr);
-        proc = arr[1];
-        match($7, /pid=([0-9]+)/, pidarr);
-        pid = pidarr[1];
+        # extract process name from quotes
+        if (match($7, /"([^"]+)"/, arr)) {
+            proc = arr[1];
+        } else {
+            proc = "unknown";
+        }
+        if (match($7, /pid=([0-9]+)/, pidarr)) {
+            pid = pidarr[1];
+        } else {
+            pid = "N/A";
+        }
         cmd = "ps -p " pid " -o cmd= 2>/dev/null";
         cmd | getline fullcmd;
         close(cmd);
         printf "| %-6s | %-25s | %-40s |\n", port, proc " (pid " pid ")", fullcmd;
     }
 }' | sort -n >> "$OUT"
+
 
 # --- Footer ---
 cat >> "$OUT" <<'EOF'
