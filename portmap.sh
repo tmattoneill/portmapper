@@ -36,7 +36,7 @@ echo "" >> "$OUT"
 printf "| %-6s | %-25s | %-40s |\n" "Port" "Process" "Command" >> "$OUT"
 printf "|%s|%s|%s|\n" "-------" "---------------------------" "------------------------------------------" >> "$OUT"
 
-sudo ss -tulwnp | awk '
+sudo ss -tulwnp | awk -v maxlen=40 '
 /LISTEN/ {
     split($5, a, ":");
     port = a[length(a)];
@@ -52,16 +52,20 @@ sudo ss -tulwnp | awk '
         } else {
             pid = "N/A";
         }
+
         cmd = "ps -p " pid " -o cmd= 2>/dev/null";
         cmd | getline fullcmd;
         close(cmd);
+
+        # truncate command if too long
+        if (length(fullcmd) > maxlen) {
+            fullcmd = substr(fullcmd, 1, maxlen-3) "...";
+        }
+
         printf "| %-6s | %-25s | %-40s |\n", port, proc " (pid " pid ")", fullcmd;
     }
 }' | sort -n >> "$OUT"
 
-
-# --- Footer ---
-cat >> "$OUT" <<'EOF'
 
 ---
 
