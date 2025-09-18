@@ -164,4 +164,4 @@ write_header
 append_listener_table
 append_usage_notes
 
-echo "✅ Port map generated at $OUT"
+echo "✅ Port map generated at $OUT" && cat $OUT
