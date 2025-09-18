@@ -3,15 +3,19 @@
 
 OUT=/etc/PORTMAP.md
 DATE=$(date -u +"%Y-%m-%d %H:%M UTC")
+SERVER=$(hostname -f 2>/dev/null || hostname)
 
-# --- Static Header ---
+
+# --- Header ---
 cat > "$OUT" <<EOF
-# <youserver.com> Port Allocation Map
+# $SERVER Port Allocation Map
 
 Generated: $DATE
 
 This file documents **reserved port ranges** and **current service assignments**.  
 All new apps MUST be assigned a port according to this scheme to avoid conflicts.
+EOF
+
 
 ---
 
@@ -41,7 +45,6 @@ sudo ss -tulwnp | awk -v maxlen=40 '
     split($5, a, ":");
     port = a[length(a)];
     if (port ~ /^[0-9]+$/) {
-        # extract process name from quotes
         if (match($7, /"([^"]+)"/, arr)) {
             proc = arr[1];
         } else {
@@ -53,11 +56,13 @@ sudo ss -tulwnp | awk -v maxlen=40 '
             pid = "N/A";
         }
 
+        key = port ":" pid;
+        if (seen[key]++) next;
+
         cmd = "ps -p " pid " -o cmd= 2>/dev/null";
         cmd | getline fullcmd;
         close(cmd);
 
-        # truncate command if too long
         if (length(fullcmd) > maxlen) {
             fullcmd = substr(fullcmd, 1, maxlen-3) "...";
         }
@@ -65,7 +70,6 @@ sudo ss -tulwnp | awk -v maxlen=40 '
         printf "| %-6s | %-25s | %-40s |\n", port, proc " (pid " pid ")", fullcmd;
     }
 }' | sort -n >> "$OUT"
-
 
 ---
 
